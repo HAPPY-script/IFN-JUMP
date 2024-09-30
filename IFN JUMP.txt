@@ -1,0 +1,124 @@
+local player = game.Players.LocalPlayer
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 300, 0, 200)
+frame.Position = UDim2.new(0.5, -150, 0.5, -100)
+frame.BackgroundColor3 = Color3.new(1, 1, 1)
+
+local function createLabel(parent, size, pos, text, color)
+    local label = Instance.new("TextLabel", parent)
+    label.Size = size
+    label.Position = pos
+    label.Text = text
+    label.TextColor3 = color
+    label.BackgroundTransparency = 1
+    label.TextScaled = true
+    return label
+end
+
+
+createLabel(frame, UDim2.new(1, 0, 0.2, 0), UDim2.new(), "Nhập Key", Color3.new(0, 0, 0))
+
+
+local inputBox = Instance.new("TextBox", frame)
+inputBox.Size = UDim2.new(1, 0, 0.2, 0)
+inputBox.Position = UDim2.new(0, 0, 0.2, 0)
+inputBox.PlaceholderText = "Nhập key ở đây"
+inputBox.TextScaled = true
+
+
+local submitButton = Instance.new("TextButton", frame)
+submitButton.Size = UDim2.new(1, 0, 0.2, 0)
+submitButton.Position = UDim2.new(0, 0, 0.4, 0)
+submitButton.Text = "Xác Nhận"
+submitButton.BackgroundColor3 = Color3.new(0, 0.78, 0)
+submitButton.TextColor3 = Color3.new(1, 1, 1)
+
+
+local errorLabel = createLabel(frame, UDim2.new(1, 0, 0.2, 0), UDim2.new(0, 0, 0.6, 0), "", Color3.new(1, 0, 0))
+
+local infiniteJumpEnabled = false
+local jumpConnection
+
+
+local toggleFrame = Instance.new("Frame", gui)
+toggleFrame.Size = UDim2.new(0, 150, 0, 100)
+toggleFrame.Position = UDim2.new(0.7, 0, 0.3, 0)
+toggleFrame.BackgroundColor3 = Color3.new(0.8, 0.8, 0.8)
+toggleFrame.Visible = false
+
+local toggleButton = Instance.new("TextButton", toggleFrame)
+toggleButton.Size = UDim2.new(1, 0, 0.6, 0)
+toggleButton.Position = UDim2.new(0, 0, 0.2, 0)
+toggleButton.Text = "Tắt Infinite Jump"
+toggleButton.BackgroundColor3 = Color3.new(0.5, 0.5, 0.5)
+toggleButton.TextColor3 = Color3.new(1, 1, 1)
+
+-- Biến di chuyển menu
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+local function updateInput(input)
+    local delta = input.Position - dragStart
+    toggleFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+toggleFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = toggleFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+toggleFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if dragging and input == dragInput then
+        updateInput(input)
+    end
+end)
+
+-- Nút bật/tắt Infinite Jump
+toggleButton.MouseButton1Click:Connect(function()
+    infiniteJumpEnabled = not infiniteJumpEnabled
+    if infiniteJumpEnabled then
+        toggleButton.Text = "Bật Infinite Jump"
+        toggleButton.BackgroundColor3 = Color3.new(0, 1, 0)
+    else
+        toggleButton.Text = "Tắt Infinite Jump"
+        toggleButton.BackgroundColor3 = Color3.new(0.5, 0.5, 0.5)
+    end
+end)
+
+
+submitButton.MouseButton1Click:Connect(function()
+    if inputBox.Text == "HAPPY_FAMILY" then
+        if not jumpConnection then
+            jumpConnection = game:GetService("UserInputService").JumpRequest:Connect(function()
+                if infiniteJumpEnabled then
+                    game.Players.LocalPlayer.Character:FindFirstChildOfClass('Humanoid'):ChangeState("Jumping")
+                end
+            end)
+        end
+        frame:Destroy()
+        toggleFrame.Visible = true
+    else
+        errorLabel.Text = "Key không đúng"
+        inputBox.Text = ""
+    end
+end)
